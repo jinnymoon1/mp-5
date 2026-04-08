@@ -1,34 +1,44 @@
-import { getShortLinksCollection } from "@/lib/db";
+import clientPromise from "./mongodb";
 
-export interface ShortLink {
+type ShortLink = {
     alias: string;
     originalUrl: string;
-    createdAt: Date;
-}
+    createdAt: string;
+};
 
-export async function findShortLinkByAlias(
-    alias: string
-): Promise<ShortLink | null> {
-    const collection = await getShortLinksCollection();
+export async function findShortLinkByAlias(alias: string): Promise<ShortLink | null> {
+    const client = await clientPromise;
+    const db = client.db("url-shortener");
+    const collection: any = db.collection("shortLinks");
 
-    const results = await collection.find({ alias: alias }).toArray();
+    const results: any[] = await collection.find({ alias: alias }).toArray();
 
     if (results.length === 0) {
         return null;
     }
 
-    return results[0] as ShortLink;
+    return {
+        alias: results[0].alias,
+        originalUrl: results[0].originalUrl,
+        createdAt: results[0].createdAt,
+    };
 }
 
 export async function createShortLink(
     alias: string,
     originalUrl: string
-): Promise<void> {
-    const collection = await getShortLinksCollection();
+): Promise<ShortLink> {
+    const client = await clientPromise;
+    const db = client.db("url-shortener");
+    const collection: any = db.collection("shortLinks");
 
-    await collection.insertOne({
+    const shortLink: ShortLink = {
         alias: alias,
         originalUrl: originalUrl,
-        createdAt: new Date(),
-    });
+        createdAt: new Date().toISOString(),
+    };
+
+    await collection.insertOne(shortLink);
+
+    return shortLink;
 }

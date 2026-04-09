@@ -43,13 +43,13 @@ export async function POST(req: Request) {
 
         return NextResponse.json(
             {
+                message: "Short URL created successfully.",
                 shortUrl: `/r/${alias}`,
-                message: "Short URL created successfully",
             },
             { status: 200 }
         );
     } catch (error) {
-        console.error("Error creating short URL:", error);
+        console.error("POST /api/shortener failed:", error);
         return NextResponse.json(
             { error: "Internal server error" },
             { status: 500 }

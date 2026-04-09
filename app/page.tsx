@@ -1,116 +1,113 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 
-interface ApiResponse {
+type ApiResponse = {
+  message?: string;
   error?: string;
-  alias?: string;
-}
+  shortUrl?: string;
+};
 
 export default function Home() {
-  const [alias, setAlias] = useState<string>("");
-  const [originalUrl, setOriginalUrl] = useState<string>("");
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const [successMessage, setSuccessMessage] = useState<string>("");
-  const [shortUrl, setShortUrl] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [longUrl, setLongUrl] = useState("");
+  const [alias, setAlias] = useState("");
+  const [message, setMessage] = useState("");
+  const [shortUrl, setShortUrl] = useState("");
 
-  async function handleSubmit(
-      event: FormEvent<HTMLFormElement>
-  ): Promise<void> {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setErrorMessage("");
-    setSuccessMessage("");
+    setMessage("");
     setShortUrl("");
-    setIsLoading(true);
 
     try {
-      const response: Response = await fetch("/api/shortener", {
+      const response = await fetch("/api/shortener", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          longUrl: longUrl,
           alias: alias,
-          originalUrl: originalUrl,
         }),
       });
 
       const data: ApiResponse = await response.json();
 
-      if (!response.ok) {
-        setErrorMessage(data.error || "Something went wrong.");
-        setIsLoading(false);
+      if (response.status >= 400) {
+        setMessage(data.error || "Something went wrong.");
         return;
       }
 
-      const generatedShortUrl: string =
-          window.location.origin + "/r/" + data.alias;
-
-      setSuccessMessage("Short URL created successfully.");
-      setShortUrl(generatedShortUrl);
+      setMessage(data.message || "Success.");
+      setShortUrl(data.shortUrl || "");
+      setLongUrl("");
       setAlias("");
-      setOriginalUrl("");
-      setIsLoading(false);
-    } catch {
-      setErrorMessage("Something went wrong.");
-      setIsLoading(false);
+    } catch (error) {
+      setMessage("Could not connect to the server.");
+    }
+  }
+
+  async function copyShortUrl() {
+    if (shortUrl === "") {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shortUrl);
+      setMessage("Short URL copied to clipboard.");
+    } catch (error) {
+      setMessage("Could not copy the short URL.");
     }
   }
 
   return (
-      <main className="pageWrapper">
+      <main className="page">
         <section className="card">
-          <p className="badge">CS391 Mini Project</p>
-          <h1 className="title">URL Shortener</h1>
-          <p className="description">
-            Enter a long URL and a custom alias. Then share the short link.
+          <h1>URL Shortener</h1>
+          <p className="subtitle">
+            Enter a URL and choose your own alias.
           </p>
 
-          <form className="form" onSubmit={handleSubmit}>
-            <div className="fieldGroup">
-              <label className="label" htmlFor="originalUrl">
-                Original URL
-              </label>
+          <form onSubmit={handleSubmit} className="form">
+            <div className="field">
+              <label htmlFor="longUrl">URL</label>
               <input
-                  id="originalUrl"
-                  className="input"
+                  id="longUrl"
                   type="text"
-                  placeholder="https://example.com/page"
-                  value={originalUrl}
-                  onChange={(event) => setOriginalUrl(event.target.value)}
+                  value={longUrl}
+                  onChange={(event) => setLongUrl(event.target.value)}
+                  placeholder="https://example.com"
               />
             </div>
 
-            <div className="fieldGroup">
-              <label className="label" htmlFor="alias">
-                Alias
-              </label>
+            <div className="field">
+              <label htmlFor="alias">Alias</label>
               <input
                   id="alias"
-                  className="input"
                   type="text"
-                  placeholder="my-link"
                   value={alias}
                   onChange={(event) => setAlias(event.target.value)}
+                  placeholder="my-link"
               />
             </div>
 
-            <button className="button" type="submit" disabled={isLoading}>
-              {isLoading ? "Creating..." : "Create Short URL"}
-            </button>
+            <button type="submit">Create Short URL</button>
           </form>
 
-          {errorMessage ? <p className="errorText">{errorMessage}</p> : null}
-          {successMessage ? <p className="successText">{successMessage}</p> : null}
+          {message !== "" && <p className="message">{message}</p>}
 
-          {shortUrl ? (
-              <section className="resultBox">
-                <p className="resultLabel">Your shortened URL</p>
-                <p className="resultUrl">{shortUrl}</p>
-              </section>
-          ) : null}
+          {shortUrl !== "" && (
+              <div className="result">
+                <p>Your shortened URL:</p>
+                <a href={shortUrl} target="_blank" rel="noreferrer">
+                  {shortUrl}
+                </a>
+                <button type="button" onClick={copyShortUrl}>
+                  Copy
+                </button>
+              </div>
+          )}
         </section>
       </main>
   );

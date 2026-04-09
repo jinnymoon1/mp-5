@@ -1,52 +1,22 @@
-"use client";
+import { redirect, notFound } from "next/navigation";
+import { getShortUrlsCollection } from "@/lib/mongodb";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+type PageProps = {
+    params: Promise<{
+        alias: string;
+    }>;
+};
 
-interface RedirectData {
-    originalUrl?: string;
-    error?: string;
-}
+export default async function AliasRedirectPage({ params }: PageProps) {
+    const resolvedParams = await params;
+    const alias = resolvedParams.alias;
 
-export default function RedirectPage() {
-    const params = useParams();
-    const [errorMessage, setErrorMessage] = useState<string>("");
+    const collection = await getShortUrlsCollection();
+    const record = await collection.findOne({ alias: alias });
 
-    useEffect(() => {
-        async function getOriginalUrl() {
-            const alias = params.alias;
+    if (record === null) {
+        notFound();
+    }
 
-            const response: Response = await fetch(
-                "/api/shortener?alias=" + alias
-            );
-
-            const data: RedirectData = await response.json();
-
-            if (!response.ok) {
-                setErrorMessage(data.error || "Alias not found.");
-                return;
-            }
-
-            if (data.originalUrl) {
-                window.location.href = data.originalUrl;
-            }
-        }
-
-        getOriginalUrl();
-    }, [params]);
-
-    return (
-        <main className="pageWrapper">
-            <section className="card">
-                <h1 className="title">Redirecting...</h1>
-                {errorMessage ? (
-                    <p className="errorText">{errorMessage}</p>
-                ) : (
-                    <p className="description">
-                        Please wait while we send you to your destination.
-                    </p>
-                )}
-            </section>
-        </main>
-    );
+    redirect(record.longUrl);
 }

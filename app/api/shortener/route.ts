@@ -1,136 +1,94 @@
-import { createShortLink, findShortLinkByAlias } from "@/lib/short-links";
-import { isValidAlias, isValidUrl } from "@/lib/validators";
+import { getShortUrlsCollection } from "@/lib/mongodb";
 
-export async function GET(request: Request): Promise<Response> {
-    const { searchParams } = new URL(request.url);
-    const alias: string = searchParams.get("alias") || "";
+type RequestBody = {
+    longUrl?: string;
+    alias?: string;
+};
 
-    if (!alias) {
-        return new Response(
-            JSON.stringify({ error: "Alias is required." }),
-            {
-                status: 400,
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+function isValidUrl(url: string): boolean {
+    try {
+        new URL(url);
+        return true;
+    } catch (error) {
+        return false;
     }
-
-    const shortLink = await findShortLinkByAlias(alias);
-
-    if (!shortLink) {
-        return new Response(
-            JSON.stringify({ error: "Alias not found." }),
-            {
-                status: 404,
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            }
-        );
-    }
-
-    return new Response(
-        JSON.stringify({
-            alias: shortLink.alias,
-            originalUrl: shortLink.originalUrl,
-        }),
-        {
-            status: 200,
-            headers: {
-                "Content-Type": "application/json",
-            },
-        }
-    );
 }
 
-export async function POST(request: Request): Promise<Response> {
+function isValidAlias(alias: string): boolean {
+    const aliasPattern = /^[a-zA-Z0-9_-]+$/;
+    return aliasPattern.test(alias);
+}
+
+export async function POST(req: Request): Promise<Response> {
     try {
-        const body = await request.json();
+        const body: RequestBody = await req.json();
 
-        const alias: string = (body.alias || "").trim();
-        const originalUrl: string = (body.originalUrl || "").trim();
+        const longUrl = body.longUrl ? body.longUrl.trim() : "";
+        const alias = body.alias ? body.alias.trim() : "";
 
-        if (!alias || !originalUrl) {
-            return new Response(
-                JSON.stringify({ error: "Alias and URL are required." }),
-                {
-                    status: 400,
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                }
+        if (longUrl === "" || alias === "") {
+            return Response.json(
+                { error: "Both URL and alias are required." },
+                { status: 400 }
+            );
+        }
+
+        if (!isValidUrl(longUrl)) {
+            return Response.json(
+                { error: "Please enter a valid URL." },
+                { status: 400 }
             );
         }
 
         if (!isValidAlias(alias)) {
-            return new Response(
-                JSON.stringify({
-                    error:
-                        "Alias can only contain letters, numbers, underscores, and hyphens.",
-                }),
-                {
-                    status: 400,
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                }
+            return Response.json(
+                { error: "Alias may only contain letters, numbers, hyphens, and underscores." },
+                { status: 400 }
             );
         }
 
-        if (!isValidUrl(originalUrl)) {
-            return new Response(
-                JSON.stringify({
-                    error: "Please enter a valid URL starting with http:// or https://",
-                }),
-                {
-                    status: 400,
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                }
+        const reservedAliases = ["api", "r"];
+
+        if (reservedAliases.includes(alias.toLowerCase())) {
+            return Response.json(
+                { error: "That alias is reserved. Please choose a different alias." },
+                { status: 400 }
             );
         }
 
-        const existingShortLink = await findShortLinkByAlias(alias);
+        const collection = await getShortUrlsCollection();
 
-        if (existingShortLink) {
-            return new Response(
-                JSON.stringify({ error: "That alias is already taken." }),
-                {
-                    status: 409,
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                }
+        const existingAlias = await collection.findOne({ alias: alias });
+
+        if (existingAlias !== null) {
+            return Response.json(
+                { error: "That alias is already taken." },
+                { status: 409 }
             );
         }
 
-        await createShortLink(alias, originalUrl);
+        await collection.insertOne({
+            alias: alias,
+            longUrl: longUrl,
+            createdAt: new Date(),
+        });
 
-        return new Response(
-            JSON.stringify({
-                alias: alias,
-            }),
+        const origin = req.headers.get("origin") || "";
+        const shortUrl = `${origin}/r/${alias}`;
+
+        return Response.json(
             {
-                status: 201,
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            }
+                message: "Short URL created successfully.",
+                shortUrl: shortUrl,
+            },
+            { status: 201 }
         );
-    } catch {
-        return new Response(
-            JSON.stringify({
-                error: "Something went wrong while creating the short URL.",
-            }),
-            {
-                status: 500,
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            }
+    } catch (error) {
+        console.error("POST /api/shortener failed:", error);
+
+        return Response.json(
+            { error: "Internal server error." },
+            { status: 500 }
         );
     }
 }

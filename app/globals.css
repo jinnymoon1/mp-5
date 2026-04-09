@@ -1,20 +1,16 @@
 * {
-  margin: 0;
   box-sizing: border-box;
-}
-
-html,
-body {
-  min-height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 body {
+  background-color: #f4f4f4;
+  color: #111111;
   font-family: Arial, Helvetica, sans-serif;
-  background: linear-gradient(180deg, #f4f7fb 0%, #e9eef7 100%);
-  color: #1f2937;
 }
 
-.pageWrapper {
+.page {
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -24,104 +20,71 @@ body {
 
 .card {
   width: 100%;
-  max-width: 640px;
-  background-color: #ffffff;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
-  border: 1px solid #dbe3f0;
+  max-width: 520px;
+  background-color: white;
+  border: 1px solid #d9d9d9;
+  padding: 24px;
 }
 
-.badge {
-  display: inline-block;
-  background-color: #e0ecff;
-  color: #2454c5;
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-size: 14px;
-  margin-bottom: 16px;
-}
-
-.title {
-  font-size: 36px;
+.card h1 {
   margin-bottom: 12px;
+  font-size: 32px;
 }
 
-.description {
-  font-size: 16px;
-  line-height: 1.6;
-  color: #4b5563;
-  margin-bottom: 24px;
+.subtitle {
+  margin-bottom: 20px;
+  color: #555555;
 }
 
 .form {
   display: flex;
   flex-direction: column;
+  gap: 16px;
 }
 
-.fieldGroup {
-  margin-bottom: 18px;
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.label {
-  display: block;
-  font-size: 15px;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.input {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  font-size: 15px;
-}
-
-.button {
-  padding: 14px 18px;
-  border: none;
-  border-radius: 10px;
-  font-size: 15px;
-  cursor: pointer;
-  background-color: #2454c5;
-  color: white;
+.field label {
   font-weight: bold;
 }
 
-.button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.errorText {
-  color: #b91c1c;
-  margin-top: 18px;
-  font-size: 14px;
-}
-
-.successText {
-  color: #166534;
-  margin-top: 18px;
-  font-size: 14px;
-}
-
-.resultBox {
-  margin-top: 24px;
-  padding: 18px;
-  border-radius: 12px;
-  background-color: #f8fafc;
-  border: 1px solid #dbe3f0;
-}
-
-.resultLabel {
-  font-size: 14px;
-  color: #475569;
-  margin-bottom: 8px;
-}
-
-.resultUrl {
+.field input {
+  border: 1px solid #bdbdbd;
+  padding: 10px;
   font-size: 16px;
-  font-weight: bold;
+}
+
+button {
+  border: 1px solid #111111;
+  background-color: #111111;
+  color: white;
+  padding: 10px 14px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #333333;
+}
+
+.message {
+  margin-top: 18px;
+}
+
+.result {
+  margin-top: 20px;
+  border-top: 1px solid #d9d9d9;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.result a {
+  color: #0b57d0;
   word-break: break-all;
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { getDatabase } from "@/lib/mongodb";
 
 export async function POST(req: Request) {
     try {
@@ -13,11 +13,11 @@ export async function POST(req: Request) {
             );
         }
 
-        const client = await clientPromise;
-        const db = client.db("url-shortener");
+        const db = await getDatabase();
         const collection = db.collection("links");
 
         const existing = await collection.findOne({ alias });
+
         if (existing) {
             return NextResponse.json(
                 { error: "Alias already exists" },
@@ -27,9 +27,10 @@ export async function POST(req: Request) {
 
         await collection.insertOne({ url, alias });
 
-        return NextResponse.json({
-            shortUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ""}/r/${alias}`,
-        });
+        return NextResponse.json(
+            { shortUrl: `/r/${alias}` },
+            { status: 200 }
+        );
     } catch (error) {
         console.error("POST /api/shortener failed:", error);
         return NextResponse.json(

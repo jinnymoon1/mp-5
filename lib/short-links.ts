@@ -1,44 +1,40 @@
-import clientPromise from "./mongodb";
+import { getDatabase } from "./mongodb";
 
-type ShortLink = {
+export type ShortLink = {
     alias: string;
-    originalUrl: string;
-    createdAt: string;
+    longUrl: string;
+    createdAt: Date;
 };
 
-export async function findShortLinkByAlias(alias: string): Promise<ShortLink | null> {
-    const client = await clientPromise;
-    const db = client.db("url-shortener");
-    const collection: any = db.collection("shortLinks");
+export async function getShortLinkByAlias(
+    alias: string
+): Promise<ShortLink | null> {
+    const db = await getDatabase();
+    const collection = db.collection<ShortLink>("shortUrls");
 
-    const results: any[] = await collection.find({ alias: alias }).toArray();
+    const result = await collection.findOne({ alias: alias });
 
-    if (results.length === 0) {
+    if (result === null) {
         return null;
     }
 
     return {
-        alias: results[0].alias,
-        originalUrl: results[0].originalUrl,
-        createdAt: results[0].createdAt,
+        alias: result.alias,
+        longUrl: result.longUrl,
+        createdAt: result.createdAt,
     };
 }
 
 export async function createShortLink(
     alias: string,
-    originalUrl: string
-): Promise<ShortLink> {
-    const client = await clientPromise;
-    const db = client.db("url-shortener");
-    const collection: any = db.collection("shortLinks");
+    longUrl: string
+): Promise<void> {
+    const db = await getDatabase();
+    const collection = db.collection<ShortLink>("shortUrls");
 
-    const shortLink: ShortLink = {
+    await collection.insertOne({
         alias: alias,
-        originalUrl: originalUrl,
-        createdAt: new Date().toISOString(),
-    };
-
-    await collection.insertOne(shortLink);
-
-    return shortLink;
+        longUrl: longUrl,
+        createdAt: new Date(),
+    });
 }

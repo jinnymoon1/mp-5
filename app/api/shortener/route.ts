@@ -1,114 +1,39 @@
-import { getDatabase } from "@/lib/mongodb";
+import { NextResponse } from "next/server";
+import clientPromise from "@/lib/mongodb";
 
-type ShortUrlDocument = {
-    alias: string;
-    longUrl: string;
-    createdAt: Date;
-};
-
-type RequestBody = {
-    longUrl?: unknown;
-    alias?: unknown;
-};
-
-function isValidUrl(url: string): boolean {
+export async function POST(req: Request) {
     try {
-        const parsedUrl = new URL(url);
+        const body = await req.json();
+        const { url, alias } = body;
 
-        if (
-            parsedUrl.protocol !== "http:" &&
-            parsedUrl.protocol !== "https:"
-        ) {
-            return false;
-        }
-
-        return true;
-    } catch (error) {
-        return false;
-    }
-}
-
-function isValidAlias(alias: string): boolean {
-    const aliasPattern = /^[a-zA-Z0-9_-]+$/;
-    return aliasPattern.test(alias);
-}
-
-export async function POST(req: Request): Promise<Response> {
-    try {
-        const body = (await req.json()) as RequestBody;
-
-        const longUrl =
-            typeof body.longUrl === "string" ? body.longUrl.trim() : "";
-
-        const alias =
-            typeof body.alias === "string" ? body.alias.trim() : "";
-
-        if (longUrl === "" || alias === "") {
-            return Response.json(
-                { error: "Both URL and alias are required." },
+        if (!url || !alias) {
+            return NextResponse.json(
+                { error: "URL and alias are required" },
                 { status: 400 }
             );
         }
 
-        if (!isValidUrl(longUrl)) {
-            return Response.json(
-                { error: "Please enter a valid URL." },
+        const client = await clientPromise;
+        const db = client.db("url-shortener");
+        const collection = db.collection("links");
+
+        const existing = await collection.findOne({ alias });
+        if (existing) {
+            return NextResponse.json(
+                { error: "Alias already exists" },
                 { status: 400 }
             );
         }
 
-        if (!isValidAlias(alias)) {
-            return Response.json(
-                {
-                    error:
-                        "Alias may only contain letters, numbers, hyphens, and underscores.",
-                },
-                { status: 400 }
-            );
-        }
+        await collection.insertOne({ url, alias });
 
-        const reservedAliases = ["api", "r"];
-
-        if (reservedAliases.includes(alias.toLowerCase())) {
-            return Response.json(
-                { error: "That alias is reserved. Please choose a different alias." },
-                { status: 400 }
-            );
-        }
-
-        const db = await getDatabase();
-        const collection = db.collection<ShortUrlDocument>("shortUrls");
-
-        const existingAlias = await collection.findOne({ alias: alias });
-
-        if (existingAlias !== null) {
-            return Response.json(
-                { error: "That alias is already taken." },
-                { status: 409 }
-            );
-        }
-
-        await collection.insertOne({
-            alias: alias,
-            longUrl: longUrl,
-            createdAt: new Date(),
+        return NextResponse.json({
+            shortUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ""}/r/${alias}`,
         });
-
-        const url = new URL(req.url);
-        const shortUrl = `${url.origin}/r/${alias}`;
-
-        return Response.json(
-            {
-                message: "Short URL created successfully.",
-                shortUrl: shortUrl,
-            },
-            { status: 201 }
-        );
     } catch (error) {
         console.error("POST /api/shortener failed:", error);
-
-        return Response.json(
-            { error: "Internal server error." },
+        return NextResponse.json(
+            { error: "Internal server error" },
             { status: 500 }
         );
     }

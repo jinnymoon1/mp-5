@@ -10,6 +10,7 @@ export default function Home() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
     setError("");
     setShortUrl("");
 
@@ -28,55 +29,65 @@ export default function Home() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Something went wrong while creating the short URL.");
+        setError(data.error || "Something went wrong.");
         return;
       }
 
       setShortUrl(data.shortUrl);
+      setLongUrl("");
+      setAlias("");
     } catch (err) {
       setError("Failed to connect to the server.");
     }
   }
 
   return (
-      <main style={{ padding: "2rem" }}>
-        <h1>URL Shortener</h1>
+      <main className="page-wrapper">
+        <section className="card">
+          <h1 className="title">URL Shortener</h1>
+          <p className="subtitle">Create a shorter and easier link.</p>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "1rem" }}>
-            <label>Long URL: </label>
+          <form onSubmit={handleSubmit} className="shortener-form">
+            <label htmlFor="longUrl" className="form-label">
+              Long URL
+            </label>
             <input
+                id="longUrl"
                 type="text"
                 value={longUrl}
                 onChange={(e) => setLongUrl(e.target.value)}
-                placeholder="Enter full URL"
+                placeholder="https://example.com"
+                className="form-input"
             />
-          </div>
 
-          <div style={{ marginBottom: "1rem" }}>
-            <label>Alias: </label>
+            <label htmlFor="alias" className="form-label">
+              Custom Alias
+            </label>
             <input
+                id="alias"
                 type="text"
                 value={alias}
                 onChange={(e) => setAlias(e.target.value)}
-                placeholder="Enter custom alias"
+                placeholder="my-link"
+                className="form-input"
             />
-          </div>
 
-          <button type="submit">Shorten URL</button>
-        </form>
+            <button type="submit" className="submit-button">
+              Shorten URL
+            </button>
+          </form>
 
-        {shortUrl && (
-            <p style={{ marginTop: "1rem" }}>
-              Short URL: <a href={shortUrl}>{shortUrl}</a>
-            </p>
-        )}
+          {shortUrl ? (
+              <div className="success-box">
+                <p className="result-label">Short URL created:</p>
+                <a href={shortUrl} className="result-link">
+                  {shortUrl}
+                </a>
+              </div>
+          ) : null}
 
-        {error && (
-            <p style={{ marginTop: "1rem", color: "red" }}>
-              {error}
-            </p>
-        )}
+          {error ? <p className="error-box">{error}</p> : null}
+        </section>
       </main>
   );
 }

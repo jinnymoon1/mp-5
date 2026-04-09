@@ -2,14 +2,13 @@ import { redirect, notFound } from "next/navigation";
 import { getShortUrlsCollection } from "@/lib/mongodb";
 
 type PageProps = {
-    params: Promise<{
+    params: {
         alias: string;
-    }>;
+    };
 };
 
 export default async function AliasRedirectPage({ params }: PageProps) {
-    const resolvedParams = await params;
-    const alias = resolvedParams.alias;
+    const alias = params.alias;
 
     const collection = await getShortUrlsCollection();
     const record = await collection.findOne({ alias: alias });
@@ -18,5 +17,5 @@ export default async function AliasRedirectPage({ params }: PageProps) {
         notFound();
     }
 
-    redirect(record.longUrl);
+    redirect(record.longUrl as string);
 }

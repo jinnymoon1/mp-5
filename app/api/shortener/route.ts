@@ -1,13 +1,27 @@
-import { getShortUrlsCollection } from "@/lib/mongodb";
+import { getDatabase } from "@/lib/mongodb";
+
+type ShortUrlDocument = {
+    alias: string;
+    longUrl: string;
+    createdAt: Date;
+};
 
 type RequestBody = {
-    longUrl?: string;
-    alias?: string;
+    longUrl?: unknown;
+    alias?: unknown;
 };
 
 function isValidUrl(url: string): boolean {
     try {
-        new URL(url);
+        const parsedUrl = new URL(url);
+
+        if (
+            parsedUrl.protocol !== "http:" &&
+            parsedUrl.protocol !== "https:"
+        ) {
+            return false;
+        }
+
         return true;
     } catch (error) {
         return false;
@@ -21,10 +35,13 @@ function isValidAlias(alias: string): boolean {
 
 export async function POST(req: Request): Promise<Response> {
     try {
-        const body: RequestBody = await req.json();
+        const body = (await req.json()) as RequestBody;
 
-        const longUrl = body.longUrl ? body.longUrl.trim() : "";
-        const alias = body.alias ? body.alias.trim() : "";
+        const longUrl =
+            typeof body.longUrl === "string" ? body.longUrl.trim() : "";
+
+        const alias =
+            typeof body.alias === "string" ? body.alias.trim() : "";
 
         if (longUrl === "" || alias === "") {
             return Response.json(
@@ -42,7 +59,10 @@ export async function POST(req: Request): Promise<Response> {
 
         if (!isValidAlias(alias)) {
             return Response.json(
-                { error: "Alias may only contain letters, numbers, hyphens, and underscores." },
+                {
+                    error:
+                        "Alias may only contain letters, numbers, hyphens, and underscores.",
+                },
                 { status: 400 }
             );
         }
@@ -56,7 +76,8 @@ export async function POST(req: Request): Promise<Response> {
             );
         }
 
-        const collection = await getShortUrlsCollection();
+        const db = await getDatabase();
+        const collection = db.collection<ShortUrlDocument>("shortUrls");
 
         const existingAlias = await collection.findOne({ alias: alias });
 
@@ -73,8 +94,8 @@ export async function POST(req: Request): Promise<Response> {
             createdAt: new Date(),
         });
 
-        const origin = req.headers.get("origin") || "";
-        const shortUrl = `${origin}/r/${alias}`;
+        const url = new URL(req.url);
+        const shortUrl = `${url.origin}/r/${alias}`;
 
         return Response.json(
             {

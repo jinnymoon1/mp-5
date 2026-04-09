@@ -14,7 +14,9 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [shortUrl, setShortUrl] = useState("");
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+      event: React.FormEvent<HTMLFormElement>
+  ): Promise<void> {
     event.preventDefault();
 
     setMessage("");
@@ -32,7 +34,7 @@ export default function Home() {
         }),
       });
 
-      const data: ApiResponse = await response.json();
+      const data = (await response.json()) as ApiResponse;
 
       if (response.status >= 400) {
         setMessage(data.error || "Something went wrong.");
@@ -48,7 +50,7 @@ export default function Home() {
     }
   }
 
-  async function copyShortUrl() {
+  async function copyShortUrl(): Promise<void> {
     if (shortUrl === "") {
       return;
     }
@@ -65,9 +67,7 @@ export default function Home() {
       <main className="page">
         <section className="card">
           <h1>URL Shortener</h1>
-          <p className="subtitle">
-            Enter a URL and choose your own alias.
-          </p>
+          <p className="subtitle">Enter a URL and choose an alias.</p>
 
           <form onSubmit={handleSubmit} className="form">
             <div className="field">

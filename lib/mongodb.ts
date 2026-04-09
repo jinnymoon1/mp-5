@@ -1,8 +1,8 @@
 import { MongoClient, Db } from "mongodb";
 
-const uri = process.env.MONGODB_URI;
+const mongoUri = process.env.MONGODB_URI;
 
-if (!uri) {
+if (!mongoUri) {
     throw new Error("MONGODB_URI is missing");
 }
 
@@ -12,7 +12,7 @@ type MongoCache = {
 };
 
 const globalForMongo = globalThis as typeof globalThis & {
-    mongoCache: MongoCache;
+    mongoCache?: MongoCache;
 };
 
 if (!globalForMongo.mongoCache) {
@@ -23,17 +23,22 @@ if (!globalForMongo.mongoCache) {
 }
 
 export async function getDatabase(): Promise<Db> {
-    if (globalForMongo.mongoCache.db !== null) {
-        return globalForMongo.mongoCache.db;
+    const cache = globalForMongo.mongoCache;
+
+    if (!cache) {
+        throw new Error("Mongo cache was not initialized.");
     }
 
-    if (globalForMongo.mongoCache.client === null) {
-        globalForMongo.mongoCache.client = new MongoClient(uri);
-        await globalForMongo.mongoCache.client.connect();
+    if (cache.db !== null) {
+        return cache.db;
     }
 
-    globalForMongo.mongoCache.db =
-        globalForMongo.mongoCache.client.db("urlShortenerDB");
+    if (cache.client === null) {
+        cache.client = new MongoClient(mongoUri);
+        await cache.client.connect();
+    }
 
-    return globalForMongo.mongoCache.db;
+    cache.db = cache.client.db("urlShortenerDB");
+
+    return cache.db;
 }

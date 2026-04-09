@@ -1,9 +1,13 @@
 import { MongoClient, Db } from "mongodb";
 
-const mongoUri = process.env.MONGODB_URI;
+function getMongoUri(): string {
+    const value = process.env.MONGODB_URI;
 
-if (!mongoUri) {
-    throw new Error("MONGODB_URI is missing");
+    if (!value) {
+        throw new Error("MONGODB_URI is missing");
+    }
+
+    return value;
 }
 
 type MongoCache = {
@@ -34,6 +38,7 @@ export async function getDatabase(): Promise<Db> {
     }
 
     if (cache.client === null) {
+        const mongoUri = getMongoUri();
         cache.client = new MongoClient(mongoUri);
         await cache.client.connect();
     }

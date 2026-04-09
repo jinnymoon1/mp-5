@@ -2,28 +2,19 @@
 
 import { useState } from "react";
 
-type ApiResponse = {
-  message?: string;
-  error?: string;
-  shortUrl?: string;
-};
-
 export default function Home() {
   const [longUrl, setLongUrl] = useState("");
   const [alias, setAlias] = useState("");
-  const [message, setMessage] = useState("");
   const [shortUrl, setShortUrl] = useState("");
+  const [error, setError] = useState("");
 
-  async function handleSubmit(
-      event: React.FormEvent<HTMLFormElement>
-  ): Promise<void> {
-    event.preventDefault();
-
-    setMessage("");
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
     setShortUrl("");
 
     try {
-      const response = await fetch("/api/shortener", {
+      const res = await fetch("/api/shortener", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -34,81 +25,58 @@ export default function Home() {
         }),
       });
 
-      const data = (await response.json()) as ApiResponse;
+      const data = await res.json();
 
-      if (response.status >= 400) {
-        setMessage(data.error || "Something went wrong.");
+      if (!res.ok) {
+        setError(data.error || "Something went wrong while creating the short URL.");
         return;
       }
 
-      setMessage(data.message || "Success.");
-      setShortUrl(data.shortUrl || "");
-      setLongUrl("");
-      setAlias("");
-    } catch (error) {
-      setMessage("Could not connect to the server.");
-    }
-  }
-
-  async function copyShortUrl(): Promise<void> {
-    if (shortUrl === "") {
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(shortUrl);
-      setMessage("Short URL copied to clipboard.");
-    } catch (error) {
-      setMessage("Could not copy the short URL.");
+      setShortUrl(data.shortUrl);
+    } catch (err) {
+      setError("Failed to connect to the server.");
     }
   }
 
   return (
-      <main className="page">
-        <section className="card">
-          <h1>URL Shortener</h1>
-          <p className="subtitle">Enter a URL and choose an alias.</p>
+      <main style={{ padding: "2rem" }}>
+        <h1>URL Shortener</h1>
 
-          <form onSubmit={handleSubmit} className="form">
-            <div className="field">
-              <label htmlFor="longUrl">URL</label>
-              <input
-                  id="longUrl"
-                  type="text"
-                  value={longUrl}
-                  onChange={(event) => setLongUrl(event.target.value)}
-                  placeholder="https://example.com"
-              />
-            </div>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "1rem" }}>
+            <label>Long URL: </label>
+            <input
+                type="text"
+                value={longUrl}
+                onChange={(e) => setLongUrl(e.target.value)}
+                placeholder="Enter full URL"
+            />
+          </div>
 
-            <div className="field">
-              <label htmlFor="alias">Alias</label>
-              <input
-                  id="alias"
-                  type="text"
-                  value={alias}
-                  onChange={(event) => setAlias(event.target.value)}
-                  placeholder="my-link"
-              />
-            </div>
+          <div style={{ marginBottom: "1rem" }}>
+            <label>Alias: </label>
+            <input
+                type="text"
+                value={alias}
+                onChange={(e) => setAlias(e.target.value)}
+                placeholder="Enter custom alias"
+            />
+          </div>
 
-            <button type="submit">Create Short URL</button>
-          </form>
+          <button type="submit">Shorten URL</button>
+        </form>
 
-          {message !== "" && <p className="message">{message}</p>}
+        {shortUrl && (
+            <p style={{ marginTop: "1rem" }}>
+              Short URL: <a href={shortUrl}>{shortUrl}</a>
+            </p>
+        )}
 
-          {shortUrl !== "" && (
-              <div className="result">
-                <p>Your shortened URL:</p>
-                <a href={shortUrl} target="_blank" rel="noreferrer">
-                  {shortUrl}
-                </a>
-                <button type="button" onClick={copyShortUrl}>
-                  Copy
-                </button>
-              </div>
-          )}
-        </section>
+        {error && (
+            <p style={{ marginTop: "1rem", color: "red" }}>
+              {error}
+            </p>
+        )}
       </main>
   );
 }

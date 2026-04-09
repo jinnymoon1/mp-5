@@ -4,9 +4,9 @@ import { getDatabase } from "@/lib/mongodb";
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { url, alias } = body;
+        const { longUrl, alias } = body;
 
-        if (!url || !alias) {
+        if (!longUrl || !alias) {
             return NextResponse.json(
                 { error: "URL and alias are required" },
                 { status: 400 }
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
         }
 
         const db = await getDatabase();
-        const collection = db.collection("links");
+        const collection = db.collection("shortUrls");
 
         const existing = await collection.findOne({ alias });
 
@@ -25,10 +25,17 @@ export async function POST(req: Request) {
             );
         }
 
-        await collection.insertOne({ url, alias });
+        await collection.insertOne({
+            longUrl,
+            alias,
+            createdAt: new Date(),
+        });
 
         return NextResponse.json(
-            { shortUrl: `/r/${alias}` },
+            {
+                message: "Short URL created successfully.",
+                shortUrl: `/r/${alias}`,
+            },
             { status: 200 }
         );
     } catch (error) {

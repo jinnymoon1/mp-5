@@ -12,7 +12,7 @@ type MongoCache = {
 };
 
 const globalForMongo = globalThis as typeof globalThis & {
-    mongoCache?: MongoCache;
+    mongoCache: MongoCache;
 };
 
 if (!globalForMongo.mongoCache) {
@@ -23,11 +23,11 @@ if (!globalForMongo.mongoCache) {
 }
 
 export async function getDatabase(): Promise<Db> {
-    if (globalForMongo.mongoCache.db) {
+    if (globalForMongo.mongoCache.db !== null) {
         return globalForMongo.mongoCache.db;
     }
 
-    if (!globalForMongo.mongoCache.client) {
+    if (globalForMongo.mongoCache.client === null) {
         globalForMongo.mongoCache.client = new MongoClient(uri);
         await globalForMongo.mongoCache.client.connect();
     }

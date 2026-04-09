@@ -38,7 +38,6 @@ export async function POST(req: Request) {
         await collection.insertOne({
             longUrl: longUrl,
             alias: alias,
-            createdAt: new Date(),
         });
 
         return NextResponse.json(

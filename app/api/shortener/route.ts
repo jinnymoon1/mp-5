@@ -13,10 +13,20 @@ export async function POST(req: Request) {
             );
         }
 
+        if (
+            !longUrl.startsWith("http://") &&
+            !longUrl.startsWith("https://")
+        ) {
+            return NextResponse.json(
+                { error: "URL must start with http:// or https://" },
+                { status: 400 }
+            );
+        }
+
         const db = await getDatabase();
         const collection = db.collection("shortUrls");
 
-        const existing = await collection.findOne({ alias });
+        const existing = await collection.findOne({ alias: alias });
 
         if (existing) {
             return NextResponse.json(
@@ -26,20 +36,20 @@ export async function POST(req: Request) {
         }
 
         await collection.insertOne({
-            longUrl,
-            alias,
+            longUrl: longUrl,
+            alias: alias,
             createdAt: new Date(),
         });
 
         return NextResponse.json(
             {
-                message: "Short URL created successfully.",
                 shortUrl: `/r/${alias}`,
+                message: "Short URL created successfully",
             },
             { status: 200 }
         );
     } catch (error) {
-        console.error("POST /api/shortener failed:", error);
+        console.error("Error creating short URL:", error);
         return NextResponse.json(
             { error: "Internal server error" },
             { status: 500 }

@@ -1,12 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getDatabase } from "@/lib/mongodb";
 
-type ShortUrlDocument = {
-    alias: string;
-    longUrl: string;
-    createdAt: Date;
-};
-
 type PageProps = {
     params: Promise<{
         alias: string;
@@ -20,7 +14,7 @@ export default async function AliasPage({
     const alias = resolvedParams.alias;
 
     const db = await getDatabase();
-    const collection = db.collection<ShortUrlDocument>("shortUrls");
+    const collection = db.collection("shortUrls");
 
     const result = await collection.findOne({ alias: alias });
 
